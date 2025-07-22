@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Product Search (Protected)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: black; }
+        .lock { font-size: 24px; }
+        .welcome { font-weight: bold; font-size: 18px; color: green; }
+        .product { margin-bottom: 20px; border-bottom: 1px solid gray; padding-bottom: 10px; }
+        .brand { font-weight: bold; font-size: 20px; }
+        .mf { font-weight: bold; font-size: 18px; color: #333; }
+    </style>
+</head>
+<body>
+    <h1><span class="lock">🔒</span> Product Search (Protected)</h1>
+    <p class="welcome"><input type="checkbox" checked disabled> Welcome to العقيد Portal</p>
+
+    <input type="text" id="searchBox" placeholder="ابحث" oninput="searchProducts()">
+    <button onclick="logout()">تسجيل خروج</button>
+
+    <div id="results"></div>
+
+    <script>
+        const products = [
+            {
+                brand: "Thiotacid",
+                description: "Thiotacid 600 Mg 30 Tab",
+                category: "GENERAL HEALTH / DIABETES SUPPLEMENTS",
+                mf: 25
+            },
+            {
+                brand: "Thiotacid",
+                description: "Thiotacid 300 Mg 60 Tablets",
+                category: "GENERAL HEALTH / DIABETES SUPPLEMENTS",
+                mf: 25
+            },
+            {
+                brand: "Thiotacid",
+                description: "Thiotacid 300 mg 30 Tab",
+                category: "GENERAL HEALTH / DIABETES SUPPLEMENTS",
+                mf: 25
+            }
+        ];
+
+        function searchProducts() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const filtered = products.filter(p =>
+                p.brand.toLowerCase().includes(query) ||
+                p.description.toLowerCase().includes(query)
+            );
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = filtered.map(p => `
+                <div class="product">
+                    <div class="brand">${p.brand}</div>
+                    <div>${p.description}</div>
+                    <div><em>${p.category}</em></div>
+                    <div class="mf">MF: ${p.mf}</div>
+                </div>
+            `).join('');
+        }
+
+        function logout() {
+            alert("تم تسجيل الخروج.");
+        }
+
+        // Initial load
+        searchProducts();
+    </script>
+</body>
+</html>
