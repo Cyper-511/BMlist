@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Product Search (Protected)</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBL8YOfZjm7CZ5lKKqIfNGqOxD-rSquIBc",
+      authDomain: "bmlist-july.firebaseapp.com",
+      projectId: "bmlist-july",
+      storageBucket: "bmlist-july.firebasestorage.app",
+      messagingSenderId: "710409464471",
+      appId: "1:710409464471:web:731d0537dcf904cb3057d2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    async function searchProducts(keyword) {
+      const queryLower = keyword.toLowerCase();
+      const resultContainer = document.getElementById("results");
+      resultContainer.innerHTML = "جارٍ البحث...";
+
+      const querySnapshot = await getDocs(collection(db, "product"));
+      let results = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const desc = data.description?.toLowerCase() || "";
+        const brand = data.brand?.toLowerCase() || "";
+        if (desc.includes(queryLower) || brand.includes(queryLower)) {
+          results.push(data);
+        }
+      });
+
+      if (results.length === 0) {
+        resultContainer.innerHTML = "ما فيه نتائج";
+      } else {
+        resultContainer.innerHTML = "";
+        results.forEach((item) => {
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${item.brand}</strong>: ${item.description}<br><em>${item.category} / ${item.subcategory}</em><hr>`;
+          resultContainer.appendChild(div);
+        });
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("loginForm");
+      const searchSection = document.getElementById("searchSection");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const welcomeMsg = document.getElementById("welcomeMsg");
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+          alert("خطأ في تسجيل الدخول: " + err.message);
+        }
+      });
+
+      logoutBtn.addEventListener("click", async () => {
+        await signOut(auth);
+      });
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          loginForm.style.display = "none";
+          searchSection.style.display = "block";
+          welcomeMsg.style.display = "block";
+        } else {
+          loginForm.style.display = "block";
+          searchSection.style.display = "none";
+          welcomeMsg.style.display = "none";
+        }
+      });
+
+      document.getElementById("searchBtn").addEventListener("click", () => {
+        const keyword = document.getElementById("searchInput").value.trim();
+        if (keyword.length > 0) {
+          searchProducts(keyword);
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <h2>🔐 Product Search (Protected)</h2>
+
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" required><br>
+    <input type="password" id="password" placeholder="كلمة المرور" required><br>
+    <button type="submit">تسجيل الدخول</button>
+  </form>
+
+  <div id="welcomeMsg" style="display:none; font-weight:bold; margin: 10px 0;">
+    ✅ Welcome to العقيد Portal
+  </div>
+
+  <div id="searchSection" style="display:none;">
+    <input type="text" id="searchInput" placeholder="اكتب اسم المنتج أو البراند" style="width: 300px;" />
+    <button id="searchBtn">بحث</button>
+    <button id="logoutBtn">تسجيل خروج</button>
+    <div id="results" style="margin-top: 20px;"></div>
+  </div>
+</body>
+</html>
