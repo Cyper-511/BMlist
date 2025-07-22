@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Allowed Users</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBL8YOfZjm7CZ5lKKqIfNGqOxD-rSquIBc",
+      authDomain: "bmlist-july.firebaseapp.com",
+      projectId: "bmlist-july",
+      storageBucket: "bmlist-july.firebasestorage.app",
+      messagingSenderId: "710409464471",
+      appId: "1:710409464471:web:731d0537dcf904cb3057d2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let currentUser = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("loginForm");
+      const userForm = document.getElementById("userForm");
+      const adminEmail = "5252Thamir@";
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const signedInEmail = userCredential.user.email;
+          if (signedInEmail !== adminEmail) {
+            alert("❌ هذا المستخدم غير مخول بإضافة صلاحيات.");
+            return;
+          }
+        } catch (err) {
+          alert("خطأ في تسجيل الدخول: " + err.message);
+        }
+      });
+
+      onAuthStateChanged(auth, (user) => {
+        if (user && user.email === adminEmail) {
+          currentUser = user;
+          loginForm.style.display = "none";
+          userForm.style.display = "block";
+        }
+      });
+
+      userForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const newEmail = document.getElementById("newEmail").value.trim();
+        if (!newEmail) return alert("اكتب الإيميل");
+
+        try {
+          await setDoc(doc(db, "allowed_users", newEmail), {
+            role: "viewer",
+            createdBy: currentUser.email
+          });
+          alert("✅ تم إضافة الإيميل بنجاح: " + newEmail);
+          document.getElementById("newEmail").value = "";
+        } catch (err) {
+          alert("❌ خطأ: " + err.message);
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <h2>🔐 إضافة مستخدم مصرح له بالدخول (Admin Only)</h2>
+
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" required><br>
+    <input type="password" id="password" placeholder="كلمة المرور" required><br>
+    <button type="submit">تسجيل الدخول</button>
+  </form>
+
+  <form id="userForm" style="display: none;">
+    <input type="email" id="newEmail" placeholder="الإيميل المراد إضافته" required>
+    <button type="submit">إضافة الإيميل</button>
+  </form>
+</body>
+</html>
