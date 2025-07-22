@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Product Search (Protected)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: black; }
+        .lock { font-size: 24px; }
+        .welcome { font-weight: bold; font-size: 18px; color: green; }
+        .product { margin-bottom: 20px; border-bottom: 1px solid gray; padding-bottom: 10px; }
+        .brand { font-weight: bold; font-size: 20px; }
+        .mf { font-weight: bold; font-size: 18px; color: #333; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <h1><span class="lock">🔒</span> Product Search (Protected)</h1>
+    <p class="welcome"><input type="checkbox" checked disabled> Welcome to العقيد Portal</p>
+
+    <div id="loginDiv">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">تسجيل دخول</button>
+    </div>
+
+    <div id="appDiv" style="display:none;">
+        <input type="text" id="searchBox" placeholder="ابحث" oninput="searchProducts()">
+        <button onclick="logout()">تسجيل خروج</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL8YOfZjm7CZ5lKKqIfNGqOxD-rSquIBc",
+            authDomain: "bmlist-july.firebaseapp.com",
+            projectId: "bmlist-july"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let products = [];
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => alert("خطأ: " + error.message));
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('loginDiv').style.display = 'none';
+                document.getElementById('appDiv').style.display = 'block';
+                loadProducts();
+            } else {
+                document.getElementById('loginDiv').style.display = 'block';
+                document.getElementById('appDiv').style.display = 'none';
+            }
+        });
+
+        function loadProducts() {
+            db.collection("product").get().then(snapshot => {
+                products = snapshot.docs.map(doc => doc.data());
+                searchProducts();
+            });
+        }
+
+        function searchProducts() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const filtered = products.filter(p =>
+                (p.brand && p.brand.toLowerCase().includes(query)) ||
+                (p.description && p.description.toLowerCase().includes(query))
+            );
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = filtered.map(p => `
+                <div class="product">
+                    <div class="brand">${p.brand || ''}</div>
+                    <div>${p.description || ''}</div>
+                    <div><em>${p.category || ''}</em></div>
+                    <div class="mf">MF: ${p.points_multiplier !== undefined ? p.points_multiplier : '—'}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
