@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Upload</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .hidden { display: none; }
+    .visible { display: block; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>🔐 Admin Excel Upload Portal</h2>
+  <p>Only visible to: <b>5252thamir@thamir.com</b></p>
+
+  <button id="adminUploadBtn" class="hidden">📤 Upload Excel</button>
+  <input type="file" id="excelUploadInput" accept=".xlsx,.xls" class="hidden"/>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwJ745qcC3Ria8PkmyRMt_-YFOw0evJJI",
+      authDomain: "bmlist-july.firebaseapp.com",
+      projectId: "bmlist-july",
+      storageBucket: "bmlist-july.firebasestorage.app",
+      messagingSenderId: "710409464471",
+      appId: "1:710409464471:web:731d0537dcf904cb3057d2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const adminEmail = "5252thamir@thamir.com";
+
+    const uploadBtn = document.getElementById("adminUploadBtn");
+    const fileInput = document.getElementById("excelUploadInput");
+
+    onAuthStateChanged(auth, (user) => {
+      if (user && user.email === adminEmail) {
+        uploadBtn.classList.remove("hidden");
+      }
+    });
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) handleExcelUpload(file);
+    });
+
+    async function clearAllCollections() {
+      const collectionsToClear = ["product", "MF"];
+      for (const name of collectionsToClear) {
+        const snapshot = await getDocs(collection(db, name));
+        for (const d of snapshot.docs) {
+          await deleteDoc(doc(db, name, d.id));
+        }
+      }
+    }
+
+    async function handleExcelUpload(file) {
+      await clearAllCollections();
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+
+        const productSheet = workbook.Sheets["product"];
+        const mfSheet = workbook.Sheets["MF"];
+
+        const productData = XLSX.utils.sheet_to_json(productSheet);
+        const mfData = XLSX.utils.sheet_to_json(mfSheet);
+
+        for (const item of productData) {
+          await setDoc(doc(collection(db, "product")), item);
+        }
+        for (const item of mfData) {
+          await setDoc(doc(collection(db, "MF")), item);
+        }
+
+        alert("✅ Data uploaded successfully.");
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
